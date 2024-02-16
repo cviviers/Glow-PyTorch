@@ -100,6 +100,7 @@ def main(
     output_dir,
     saved_optimizer,
     warmup,
+    approx_mass_alpha = 2.0,
 ):
 
     device = "cpu" if (not torch.cuda.is_available() or not cuda) else "cuda:0"
@@ -154,6 +155,8 @@ def main(
         x, y = batch
         x = x.to(device)
 
+        x.requires_grad = True
+
         if y_condition:
             y = y.to(device)
             z, nll, y_logits = model(x, y)
@@ -162,7 +165,16 @@ def main(
             z, nll, y_logits = model(x, None)
             losses = compute_loss(nll)
 
-        losses["total_loss"].backward()
+        losses["total_loss"].backward(retain_graph=True)
+
+        gradient_norm = torch.flatten(x.grad, start_dim=1).norm(dim=1, p=2).mean(dim=0)
+        losses["gradient_norm"] = gradient_norm
+
+        combined_loss = losses["total_loss"] + approx_mass_alpha * gradient_norm
+        losses['combined_loss'] = combined_loss
+
+        optimizer.zero_grad()
+        combined_loss.backward()  
 
         if max_grad_clip > 0:
             torch.nn.utils.clip_grad_value_(model.parameters(), max_grad_clip)
@@ -170,7 +182,7 @@ def main(
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
 
         optimizer.step()
-
+        
         return losses
 
     def eval_step(engine, batch):
@@ -179,16 +191,25 @@ def main(
         x, y = batch
         x = x.to(device)
 
-        with torch.no_grad():
-            if y_condition:
-                y = y.to(device)
-                z, nll, y_logits = model(x, y)
-                losses = compute_loss_y(
-                    nll, y_logits, y_weight, y, multi_class, reduction="none"
-                )
-            else:
-                z, nll, y_logits = model(x, None)
-                losses = compute_loss(nll, reduction="none")
+        x.requires_grad = True
+        
+        if y_condition:
+            y = y.to(device)
+            z, nll, y_logits = model(x, y)
+            losses = compute_loss_y(
+                nll, y_logits, y_weight, y, multi_class, reduction="none"
+            )
+        else:
+            z, nll, y_logits = model(x, None)
+            losses = compute_loss(nll, reduction="none")
+
+        losses["total_loss"].mean().backward(retain_graph=True)
+        gradient_norm = torch.flatten(x.grad, start_dim=1).norm(dim=1, p=2).mean(dim=0)
+        losses["gradient_norm"] = gradient_norm
+
+        combined_loss = losses["total_loss"] + approx_mass_alpha * gradient_norm
+        losses['combined_loss'] = combined_loss
+
 
         return losses
 
@@ -398,7 +419,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--eval_batch_size",
         type=int,
-        default=512,
+        default=64,
         help="batch size used during evaluation",
     )
 
@@ -449,6 +470,13 @@ if __name__ == "__main__":
     )
 
     parser.add_argument("--seed", type=int, default=0, help="manual seed")
+
+    parser.add_argument(
+        "--approx_mass_alpha",
+        type=float,
+        default=2.0,
+        help="Weight for approximate mass term",
+    )
 
     args = parser.parse_args()
 
