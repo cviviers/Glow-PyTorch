@@ -203,7 +203,7 @@ def main(
                 nll, y_logits, y_weight, y, multi_class, reduction="none"
             )
         else:
-            z, nll, y_logits = model(x, None)
+            z, nll, y_logits, _ = model(x, None)
             losses = compute_loss(nll, reduction="none")
 
         losses["total_loss"].mean().backward(retain_graph=True)
