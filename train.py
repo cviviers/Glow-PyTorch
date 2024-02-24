@@ -15,7 +15,7 @@ from ignite.engine import Engine, Events
 from ignite.handlers import ModelCheckpoint, Timer
 from ignite.metrics import RunningAverage, Loss
 
-from datasets import get_CIFAR10, get_SVHN
+from datasets import get_CIFAR10, get_SVHN, get_XRAY
 from model import Glow
 
 
@@ -34,6 +34,9 @@ def check_dataset(dataset, dataroot, augment, download):
     if dataset == "svhn":
         svhn = get_SVHN(augment, dataroot, download)
         input_size, num_classes, train_dataset, test_dataset = svhn
+    if dataset == "xray":
+        xray = get_XRAY(augment, dataroot, download)
+        input_size, num_classes, train_dataset, test_dataset = xray
 
     return input_size, num_classes, train_dataset, test_dataset
 
@@ -162,7 +165,7 @@ def main(
             z, nll, y_logits = model(x, y)
             losses = compute_loss_y(nll, y_logits, y_weight, y, multi_class)
         else:
-            z, nll, y_logits = model(x, None)
+            z, nll, y_logits, _ = model(x, None)
             losses = compute_loss(nll)
 
         losses["total_loss"].backward(retain_graph=True)
@@ -329,7 +332,7 @@ if __name__ == "__main__":
         "--dataset",
         type=str,
         default="cifar10",
-        choices=["cifar10", "svhn"],
+        choices=["cifar10", "svhn", "xray"],
         help="Type of the dataset to be used.",
     )
 
