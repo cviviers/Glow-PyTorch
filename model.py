@@ -286,7 +286,7 @@ class Glow(nn.Module):
         # Full objective - converted to bits per dimension
         bpd = (-objective) / (math.log(2.0) * c * h * w)
 
-        return z, bpd, y_logits
+        return z, bpd, y_logits, objective
 
     def reverse_flow(self, z, y_onehot, temperature):
         with torch.no_grad():

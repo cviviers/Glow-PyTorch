@@ -3,4 +3,9 @@ output
 .flake8
 __pycache__
 .ipynb_checkpoints
+results
 
+*.png
+*.zip
+
+*.ipynb
