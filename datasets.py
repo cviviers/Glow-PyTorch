@@ -152,6 +152,34 @@ def get_XRAY(augment, dataroot, download):
 
     # train_dataset = datasets.ImageFolder(
     return image_shape, num_classes, train_dataset, val_dataset
+
+def get_XRAY_custom(augment, dataroot, download, set = 17):
+
+    image_shape = (128, 128, 1)
+    num_classes = 1
+
+    create_transform=transforms.Compose([GetImagesOnly, toTensor, prepocess_xray, add_labels] )
+
+    base_dir = dataroot # r"/share/colon/cviviers/artifact/data/Dicom/"
+    json_path = os.path.join(base_dir, "data_description_clock.json")
+
+
+    modes_to_exclude = list(np.arange(0, 18))
+    # remove set from modes to exclude
+    modes_to_exclude.remove(set)
+
+    xray_dataset = ComposedXrayImageDataset(base_dir, json_path, None, series_per_mode=1, overlap=0.1, patch_size=128, 
+                                            images_per_series=200, transform=create_transform, modes_to_exclude=modes_to_exclude)
+
+
+    # split dataset into train, val and test 80/10/10
+    train_size = int(0.8 * len(xray_dataset))
+    val_size = int(0.1 * len(xray_dataset))
+    test_size = len(xray_dataset) - train_size - val_size
+    train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(xray_dataset, [train_size, val_size, test_size])
+
+    # train_dataset = datasets.ImageFolder(
+    return image_shape, num_classes, train_dataset, val_dataset,test_dataset
     
 def add_labels(x):
     return (x, 1)
