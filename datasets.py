@@ -4,6 +4,7 @@ import torch
 import torch.nn.functional as F
 
 from torchvision import transforms, datasets
+from utils import TinyImageNet
 
 n_bits = 8
 
@@ -28,13 +29,13 @@ def postprocess(x):
     x = x * 2 ** n_bits
     return torch.clamp(x, 0, 255).byte()
 
-def one_hot_encode(target):
+
+def one_hot_encode(target, num_classes=10):
     """
     One hot encode with fixed 10 classes
     Args: target           - the target labels to one-hot encode
     Retn: one_hot_encoding - the OHE of this tensor
     """
-    num_classes = 10
     one_hot_encoding = F.one_hot(torch.tensor(target),num_classes)
 
     return one_hot_encoding
@@ -77,6 +78,38 @@ def get_CIFAR10(augment, dataroot, download):
 
     return image_shape, num_classes, train_dataset, test_dataset
 
+def get_TinyImageNet(augment, dataroot, download):
+    image_shape = (64, 64, 3)
+    num_classes = 200
+
+    if augment:
+        transformations = [
+            transforms.RandomAffine(0, translate=(0.1, 0.1)),
+            transforms.RandomHorizontalFlip(),
+        ]
+    else:
+        transformations = []
+
+    transformations.extend([transforms.ToTensor(), preprocess])
+    train_transform = transforms.Compose(transformations)
+
+    test_transform = transforms.Compose([transforms.ToTensor(), preprocess])
+
+
+    path = Path(dataroot) / "data" / "TinyImageNet"
+    train_dataset = TinyImageNet(
+        path / "train",
+        transform=train_transform,
+        target_transform=one_hot_encode,
+    )
+
+    val_dataset = datasets.ImageFolder(
+        path / "val",
+        transform=test_transform,
+        target_transform=one_hot_encode,
+    )
+
+    return image_shape, num_classes, train_dataset, val_dataset
 
 def get_SVHN(augment, dataroot, download):
     image_shape = (32, 32, 3)

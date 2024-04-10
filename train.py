@@ -17,6 +17,7 @@ from ignite.metrics import RunningAverage, Loss
 
 from datasets import get_CIFAR10, get_SVHN
 from model import Glow
+import wandb
 
 
 def check_manual_seed(seed):
@@ -141,7 +142,8 @@ def main(
         learn_top,
         y_condition,
     )
-
+    if 'WANDB' in os.environ:
+        wandb.watch(model)
     model = model.to(device)
     optimizer = optim.Adamax(model.parameters(), lr=lr, weight_decay=5e-5)
 
@@ -182,7 +184,8 @@ def main(
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
 
         optimizer.step()
-        
+        if 'WANDB' in os.environ:
+            wandb.log(losses)
         return losses
 
     def eval_step(engine, batch):
@@ -209,6 +212,7 @@ def main(
 
         combined_loss = losses["total_loss"] + approx_mass_alpha * gradient_norm
         losses['combined_loss'] = combined_loss
+
 
 
         return losses
@@ -302,6 +306,8 @@ def main(
         losses = ", ".join([f"{key}: {value:.2f}" for key, value in metrics.items()])
 
         print(f"Validation Results - Epoch: {engine.state.epoch} {losses}")
+        if 'WANDB' in os.environ:
+            wandb.log(metrics)
 
     timer = Timer(average=True)
     timer.attach(
@@ -499,4 +505,11 @@ if __name__ == "__main__":
     with open(os.path.join(args.output_dir, "hparams.json"), "w") as fp:
         json.dump(kwargs, fp, sort_keys=True, indent=4)
 
+    if "WANDB" in os.environ:
+        wandb.init(project="glow-pytorch", config=kwargs)
+        wandb.config.update(kwargs)
+
     main(**kwargs)
+
+    if 'WANDB' in os.environ:
+        wandb.finish()

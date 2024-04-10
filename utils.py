@@ -93,3 +93,72 @@ def extract_subset(dataset, num_subset :int, random_subset :bool):
         indices = [i for i in range(num_subset)]
         
     return torch.utils.data.Subset(dataset, indices)
+
+
+class TinyImageNet(torchvision.datasets.VisionDataset):
+    # load all images in train/val/test
+    def __init__(self, root, split='train', transform=None, target_transform=None):
+        super(TinyImageNet, self).__init__(root, transform=transform, target_transform=target_transform)
+
+        self.split = split
+        self.data = []
+        self.targets = []
+        self.classes = []
+        self.class_to_idx = {}
+        self.idx_to_class = {}
+        self.load_data()
+
+    def load_data(self):
+
+        if self.split == 'train':
+            data_path = os.path.join(self.root, 'train')
+
+            # find all the images in the train directory
+            for class_name in os.listdir(data_path):
+                class_path = os.path.join(data_path, class_name, 'images')
+                for img_name in os.listdir(class_path):
+                    img_path = os.path.join(class_path, img_name)
+                    # read image as rgb
+                    img = np.array(Image.open(img_path))
+                    # if not rgb, convert to rgb
+                    if len(img.shape) == 2:
+                        img = np.stack((img,)*3, axis=-1)
+                    self.data.append(img)
+                    self.targets.append(class_name)
+
+        elif self.split == 'val':
+            data_path = os.path.join(self.root, 'val')
+            with open(os.path.join(data_path, 'val_annotations.txt')) as f:
+                for line in f:
+                    img_name, class_name = line.split('\t')[:2]
+                    img_path = os.path.join(data_path, 'images', img_name)
+                    # temp open image
+
+                    img = np.array(Image.open(img_path))
+                    if len(img.shape) == 2:
+                        img = np.stack((img,)*3, axis=-1)
+                    self.data.append(img)
+                    self.targets.append(class_name)
+        elif self.split == 'test':
+            data_path = os.path.join(self.root, 'test', 'images')
+            for img_name in os.listdir(data_path):
+                img_path = os.path.join(data_path, img_name)
+                img = np.array(Image.open(img_path))
+                if len(img.shape) == 2:
+                        img = np.stack((img,)*3, axis=-1)
+                self.data.append(img)
+                self.targets.append('')
+
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, index):
+        img, targets = self.data[index], self.targets[index]
+        img = Image.fromarray(img)
+        
+        if self.transform is not None:
+            img = self.transform(img)
+        if self.target_transform is not None:
+            targets = self.target_transform(targets)
+            
+        return img, targets
