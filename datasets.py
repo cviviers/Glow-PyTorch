@@ -36,6 +36,7 @@ def one_hot_encode(target, num_classes=10):
     Args: target           - the target labels to one-hot encode
     Retn: one_hot_encoding - the OHE of this tensor
     """
+    print(target)
     one_hot_encoding = F.one_hot(torch.tensor(target),num_classes)
 
     return one_hot_encoding
@@ -95,18 +96,21 @@ def get_TinyImageNet(augment, dataroot, download):
 
     test_transform = transforms.Compose([transforms.ToTensor(), preprocess])
 
+    # pass one_hot_encode as target_transform
 
-    path = Path(dataroot) / "data" / "TinyImageNet"
+    path = Path(dataroot) 
     train_dataset = TinyImageNet(
-        path / "train",
+        path,
+        split= "train",
         transform=train_transform,
-        target_transform=one_hot_encode,
+        target_transform=None,
     )
 
-    val_dataset = datasets.ImageFolder(
-        path / "val",
+    val_dataset = TinyImageNet(
+        path,
+        split = "val",
         transform=test_transform,
-        target_transform=one_hot_encode,
+        target_transform=None,
     )
 
     return image_shape, num_classes, train_dataset, val_dataset

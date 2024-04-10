@@ -15,7 +15,7 @@ from ignite.engine import Engine, Events
 from ignite.handlers import ModelCheckpoint, Timer
 from ignite.metrics import RunningAverage, Loss
 
-from datasets import get_CIFAR10, get_SVHN
+from datasets import get_CIFAR10, get_SVHN, get_TinyImageNet
 from model import Glow
 import wandb
 
@@ -35,6 +35,9 @@ def check_dataset(dataset, dataroot, augment, download):
     if dataset == "svhn":
         svhn = get_SVHN(augment, dataroot, download)
         input_size, num_classes, train_dataset, test_dataset = svhn
+    if dataset == "tinyimagenet":
+        tinyimagenet = get_TinyImageNet(augment, dataroot, download)
+        input_size, num_classes, train_dataset, test_dataset = tinyimagenet
 
     return input_size, num_classes, train_dataset, test_dataset
 
@@ -164,7 +167,7 @@ def main(
             z, nll, y_logits = model(x, y)
             losses = compute_loss_y(nll, y_logits, y_weight, y, multi_class)
         else:
-            z, nll, y_logits = model(x, None)
+            z, nll, y_logits, objective = model(x, None)
             losses = compute_loss(nll)
 
         losses["total_loss"].backward(retain_graph=True)
@@ -203,7 +206,7 @@ def main(
                 nll, y_logits, y_weight, y, multi_class, reduction="none"
             )
         else:
-            z, nll, y_logits = model(x, None)
+            z, nll, y_logits, objective = model(x, None)
             losses = compute_loss(nll, reduction="none")
 
         losses["total_loss"].mean().backward(retain_graph=True)
@@ -335,7 +338,7 @@ if __name__ == "__main__":
         "--dataset",
         type=str,
         default="cifar10",
-        choices=["cifar10", "svhn"],
+        choices=["cifar10", "svhn", 'cifar10c', 'tinyimagenet'],
         help="Type of the dataset to be used.",
     )
 
@@ -504,6 +507,9 @@ if __name__ == "__main__":
 
     with open(os.path.join(args.output_dir, "hparams.json"), "w") as fp:
         json.dump(kwargs, fp, sort_keys=True, indent=4)
+
+    # add wandb to os.environ to enable logging
+    os.environ['WANDB'] = 'true'
 
     if "WANDB" in os.environ:
         wandb.init(project="glow-pytorch", config=kwargs)
