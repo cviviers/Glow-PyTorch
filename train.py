@@ -145,8 +145,9 @@ def main(
         learn_top,
         y_condition,
     )
-    if 'WANDB' in os.environ:
-        wandb.watch(model)
+    
+    # if 'WANDB' in os.environ:
+    #     wandb.watch(model)
     model = model.to(device)
     optimizer = optim.Adamax(model.parameters(), lr=lr, weight_decay=5e-5)
 
@@ -187,8 +188,12 @@ def main(
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
 
         optimizer.step()
+
         if 'WANDB' in os.environ:
+            # log losses
             wandb.log(losses)
+            # log learning rate
+
         return losses
 
     def eval_step(engine, batch):
