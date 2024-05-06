@@ -162,3 +162,44 @@ class TinyImageNet(torchvision.datasets.VisionDataset):
             targets = self.target_transform(targets)
             
         return img, targets
+    
+
+class TinyImageNetC(torchvision.datasets.VisionDataset):
+    def __init__(self, root :str, curruption :str, transform=None, target_transform=None, severity=1):
+        super(TinyImageNetC, self).__init__(
+            root, transform=transform,
+            target_transform=target_transform
+        )
+        data_path = os.path.join(root, curruption, str(severity))
+        target_path = os.listdir(os.path.join(root, curruption, str(severity)))
+
+        self.data = [] 
+        self.targets = []
+
+        self.__load_data__(data_path)
+
+                
+    
+    def __len__(self):
+        return len(self.data)
+    
+    def __load_data__(self, path):
+        for class_name in os.listdir(path):
+            for img_name in os.listdir(os.path.join(path, class_name)):
+                img_path = os.path.join(path, class_name, img_name)
+                img = np.array(Image.open(img_path))
+                if len(img.shape) == 2:
+                    img = np.stack((img,)*3, axis=-1)
+                self.data.append(img)
+                self.targets.append(class_name)
+
+    def __getitem__(self, index):
+        img, targets = self.data[index], self.targets[index]
+        img = Image.fromarray(img)
+        
+        if self.transform is not None:
+            img = self.transform(img)
+        if self.target_transform is not None:
+            targets = self.target_transform(targets)
+            
+        return img, targets

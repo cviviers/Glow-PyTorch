@@ -1,5 +1,5 @@
 from pathlib import Path
-
+import os
 import torch
 import torch.nn.functional as F
 
@@ -113,7 +113,17 @@ def get_TinyImageNet(augment, dataroot, download):
         target_transform=None,
     )
 
-    return image_shape, num_classes, train_dataset, val_dataset
+    if os.path.exists(path / dataroot / "test"):
+        test_dataset = TinyImageNet(
+            path,
+            split="test",
+            transform=test_transform,
+            target_transform=None,
+        )
+        return image_shape, num_classes, train_dataset, val_dataset, test_dataset
+    else:
+
+        return image_shape, num_classes, train_dataset, val_dataset
 
 def get_SVHN(augment, dataroot, download):
     image_shape = (32, 32, 3)
