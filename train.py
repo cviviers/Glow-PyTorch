@@ -15,7 +15,7 @@ from ignite.engine import Engine, Events
 from ignite.handlers import ModelCheckpoint, Timer
 from ignite.metrics import RunningAverage, Loss
 
-from datasets import get_CIFAR10, get_SVHN, get_TinyImageNet
+from datasets import get_CIFAR10, get_SVHN, get_TinyImageNet, get_MNIST
 from model import Glow
 import wandb
 
@@ -38,8 +38,11 @@ def check_dataset(dataset, dataroot, augment, download):
     if dataset == "tinyimagenet":
         tinyimagenet = get_TinyImageNet(augment, dataroot, download)
         input_size, num_classes, train_dataset, test_dataset = tinyimagenet
+    if dataset == "mnist":
+        mnist = get_MNIST(augment, dataroot, download)
+        input_size, num_classes, train_dataset, val_dataset, test_dataset = mnist
 
-    return input_size, num_classes, train_dataset, test_dataset
+    return input_size, num_classes, train_dataset, val_dataset
 
 
 def compute_loss(nll, reduction="mean"):
@@ -105,6 +108,7 @@ def main(
     saved_optimizer,
     warmup,
     approx_mass_alpha = 2.0,
+    img_size = 32,
 ):
 
     device = "cpu" if (not torch.cuda.is_available() or not cuda) else "cuda:0"
@@ -343,7 +347,7 @@ if __name__ == "__main__":
         "--dataset",
         type=str,
         default="cifar10",
-        choices=["cifar10", "svhn", 'cifar10c', 'tinyimagenet'],
+        choices=["cifar10", "svhn", 'cifar10c', 'tinyimagenet', 'mnist'],
         help="Type of the dataset to be used.",
     )
 
@@ -491,6 +495,8 @@ if __name__ == "__main__":
         default=2.0,
         help="Weight for approximate mass term",
     )
+
+    parser.add_argument("--img_size", type=int, default=32, help="Size of image")
 
     args = parser.parse_args()
 

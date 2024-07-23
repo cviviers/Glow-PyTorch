@@ -94,6 +94,37 @@ def extract_subset(dataset, num_subset :int, random_subset :bool):
         
     return torch.utils.data.Subset(dataset, indices)
 
+class MNISTC(torchvision.datasets.VisionDataset):
+    def __init__(self, root :str, name:str,  transform=None, target_transform=None, severity=1, split='test'):
+        
+        super(MNISTC, self).__init__(
+            root, transform=transform,
+            target_transform=target_transform
+        )
+        data_path = os.path.join(root, name, split + '_images.npy')
+        target_path = os.path.join(root, name, split + '_labels.npy')
+        
+        self.data = np.load(data_path)[(severity-1)*10000:severity*10000]
+        self.targets = np.load(target_path)[(severity-1)*10000:severity*10000]
+
+                
+    
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, index):
+        img, targets = self.data[index], self.targets[index]
+
+        if len(img.shape) != 2:
+            img = img.squeeze()
+        img = Image.fromarray(img, mode='L')
+
+        if self.transform is not None:
+            img = self.transform(img)
+        if self.target_transform is not None:
+            targets = self.target_transform(targets)
+            
+        return img, targets
 
 class TinyImageNet(torchvision.datasets.VisionDataset):
     # load all images in train/val/test
@@ -203,3 +234,291 @@ class TinyImageNetC(torchvision.datasets.VisionDataset):
             targets = self.target_transform(targets)
             
         return img, targets
+    
+
+    
+
+class SSBHard(torchvision.datasets.VisionDataset):
+    def __init__(self, root, transform=None, target_transform=None, data_to_load='SSBHard.txt'):
+        super(SSBHard, self).__init__(root, transform=transform, target_transform=target_transform)
+        self.data = []
+        self.targets = []
+        self.file_list = []
+
+        # read the file list
+        with open(data_to_load, 'r') as f:
+            self.file_list = f.readlines()
+
+        
+        # example file
+        # ssb_hard/n11622368/n11622368_1063.JPEG -1
+
+        self.load_data()
+
+    def load_data(self):
+        data_path = self.root # os.path.join(self.root, 'data', 'ssb_hard')
+
+        for line in self.file_list:
+
+            img_path, _ = line.split()
+            target = img_path.split('/')[1]
+
+            img_path = os.path.join(data_path, img_path)
+            img = np.array(Image.open(img_path).convert(mode='RGB'))
+
+            if len(img.shape) == 2:
+                # stack image to 3 channels in the last channel
+                print('Converting to RGB')
+                img = np.stack((img,)*3, axis=-1)
+                print(img.shape)
+            elif img.shape[2] == 4:
+                print('Converting alpha to RGB')
+                img = img[:, :, :3]
+                # img = np.delete(arr=img, obj=3, axis=-1)
+                
+
+            self.data.append(img)
+            self.targets.append(target)
+
+
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, index):
+        img, targets = self.data[index], self.targets[index]
+        img = Image.fromarray(img)
+        
+        if self.transform is not None:
+            img = self.transform(img)
+        if self.target_transform is not None:
+            targets = self.target_transform(targets)
+            
+        return img, targets
+    
+class NINCO(torchvision.datasets.VisionDataset):
+    def __init__(self, root, transform=None, target_transform=None, data_to_load='NINCO.txt'):
+        super(NINCO, self).__init__(root, transform=transform, target_transform=target_transform)
+        self.data = []
+        self.targets = []
+        self.file_list = []
+
+        # read the file list
+        with open(data_to_load, 'r') as f:
+            self.file_list = f.readlines()
+
+        
+        # example file
+        # ssb_hard/n11622368/n11622368_1063.JPEG -1
+
+        self.load_data()
+
+    def load_data(self):
+        data_path = self.root # os.path.join(self.root, 'data', 'ssb_hard')
+
+        for line in self.file_list:
+
+            img_path, _ = line.split()
+            target = img_path.split('/')[1]
+
+            img_path = os.path.join(data_path, img_path)
+            img = np.array(Image.open(img_path).convert(mode='RGB'))
+
+            if len(img.shape) == 2:
+                # stack image to 3 channels in the last channel
+                print('Converting to RGB')
+                img = np.stack((img,)*3, axis=-1)
+                print(img.shape)
+            elif img.shape[2] == 4:
+                print('Converting alpha to RGB')
+                img = img[:, :, :3]
+                # img = np.delete(arr=img, obj=3, axis=-1)
+                
+
+            self.data.append(img)
+            self.targets.append(target)
+
+
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, index):
+        img, targets = self.data[index], self.targets[index]
+        img = Image.fromarray(img)
+        
+        if self.transform is not None:
+            img = self.transform(img)
+        if self.target_transform is not None:
+            targets = self.target_transform(targets)
+            
+        return img, targets
+    
+class iNaturalist(torchvision.datasets.VisionDataset):
+    def __init__(self, root, transform=None, target_transform=None, data_to_load='iNaturalist.txt'):
+        super(iNaturalist, self).__init__(root, transform=transform, target_transform=target_transform)
+        self.data = []
+        self.targets = []
+        self.file_list = []
+
+        # read the file list
+        with open(data_to_load, 'r') as f:
+            self.file_list = f.readlines()
+
+        
+        # example file
+        # ssb_hard/n11622368/n11622368_1063.JPEG -1
+
+        self.load_data()
+
+    def load_data(self):
+        data_path = self.root # os.path.join(self.root, 'data', 'ssb_hard')
+
+        for line in self.file_list:
+
+            img_path, _ = line.split()
+            target = img_path.split('/')[1]
+
+            img_path = os.path.join(data_path, img_path)
+            img = np.array(Image.open(img_path).convert(mode='RGB'))
+
+            if len(img.shape) == 2:
+                # stack image to 3 channels in the last channel
+                print('Converting to RGB')
+                img = np.stack((img,)*3, axis=-1)
+                print(img.shape)
+            elif img.shape[2] == 4:
+                print('Converting alpha to RGB')
+                img = img[:, :, :3]
+                # img = np.delete(arr=img, obj=3, axis=-1)
+                
+
+            self.data.append(img)
+            self.targets.append(target)
+
+
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, index):
+        img, targets = self.data[index], self.targets[index]
+        img = Image.fromarray(img)
+        
+        if self.transform is not None:
+            img = self.transform(img)
+        if self.target_transform is not None:
+            targets = self.target_transform(targets)
+            
+        return img, targets
+    
+class Texture(torchvision.datasets.VisionDataset):
+    def __init__(self, root, transform=None, target_transform=None, data_to_load='Texture.txt'):
+        super(Texture, self).__init__(root, transform=transform, target_transform=target_transform)
+        self.data = []
+        self.targets = []
+        self.file_list = []
+
+        # read the file list
+        with open(data_to_load, 'r') as f:
+            self.file_list = f.readlines()
+
+        
+        # example file
+        # ssb_hard/n11622368/n11622368_1063.JPEG -1
+
+        self.load_data()
+
+    def load_data(self):
+        data_path = self.root # os.path.join(self.root, 'data', 'ssb_hard')
+
+        for line in self.file_list:
+
+            img_path, _ = line.split()
+            target = img_path.split('/')[1]
+
+            img_path = os.path.join(data_path, img_path)
+            img = np.array(Image.open(img_path).convert(mode='RGB'))
+
+            if len(img.shape) == 2:
+                # stack image to 3 channels in the last channel
+                print('Converting to RGB')
+                img = np.stack((img,)*3, axis=-1)
+                print(img.shape)
+            elif img.shape[2] == 4:
+                print('Converting alpha to RGB')
+                img = img[:, :, :3]
+                # img = np.delete(arr=img, obj=3, axis=-1)
+                
+
+            self.data.append(img)
+            self.targets.append(target)
+
+
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, index):
+        img, targets = self.data[index], self.targets[index]
+        img = Image.fromarray(img)
+        
+        if self.transform is not None:
+            img = self.transform(img)
+        if self.target_transform is not None:
+            targets = self.target_transform(targets)
+            
+        return img, targets
+    
+class OpenImageOOD(torchvision.datasets.VisionDataset):
+    def __init__(self, root, transform=None, target_transform=None, data_to_load='OpenImageOOD.txt'):
+        super(OpenImageOOD, self).__init__(root, transform=transform, target_transform=target_transform)
+        self.data = []
+        self.targets = []
+        self.file_list = []
+
+        # read the file list
+        with open(data_to_load, 'r') as f:
+            self.file_list = f.readlines()
+
+        
+        # example file
+        # ssb_hard/n11622368/n11622368_1063.JPEG -1
+
+        self.load_data()
+
+    def load_data(self):
+        data_path = self.root # os.path.join(self.root, 'data', 'ssb_hard')
+
+        for line in self.file_list:
+
+            img_path, _ = line.split()
+            target = img_path.split('/')[1]
+
+            img_path = os.path.join(data_path, img_path)
+            img = np.array(Image.open(img_path).convert(mode='RGB'))
+
+            if len(img.shape) == 2:
+                # stack image to 3 channels in the last channel
+                print('Converting to RGB')
+                img = np.stack((img,)*3, axis=-1)
+                print(img.shape)
+            elif img.shape[2] == 4:
+                print('Converting alpha to RGB')
+                img = img[:, :, :3]
+                # img = np.delete(arr=img, obj=3, axis=-1)
+                
+
+            self.data.append(img)
+            self.targets.append(target)
+
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, index):
+        img, targets = self.data[index], self.targets[index]
+        img = Image.fromarray(img)
+        
+        if self.transform is not None:
+            img = self.transform(img)
+        if self.target_transform is not None:
+            targets = self.target_transform(targets)
+            
+        return img, targets
+    
